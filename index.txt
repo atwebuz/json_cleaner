@@ -3,9 +3,7 @@ import slugify
 from sqlalchemy import create_engine
 from datetime import datetime
 import json
-import base64
 from tabulate import tabulate
-import os
 
 # Assuming 'result.json' contains the JSON data
 with open('result.json', 'r', encoding='utf-8') as file:
@@ -22,11 +20,11 @@ for message in messages:
         print(f"Skipping non-dictionary element: {message}")
         continue
     
-    photo_path = message.get('photo', None)
+    photo = message.get('photo', None)
     
-    # Skip if 'photo' is None or the file doesn't exist
-    if photo_path is None or not os.path.exists(photo_path):
-        print(f"Skipping element with no valid 'photo' file: {message}")
+    # Skip if 'photo' is None
+    if photo is None:
+        print(f"Skipping element with no 'photo': {message}")
         continue
 
     date_str = message.get('date', None)
@@ -49,17 +47,13 @@ for message in messages:
         slug = f"{base_slug}-{counter}"
         counter += 1
 
-    # Read image binary data
-    with open(photo_path, 'rb') as photo_file:
-        photo_binary_data = base64.b64encode(photo_file.read()).decode('utf-8')
-
     result_list.append({
         'id': message.get('id', None),
         'title': title,
         'slug': slug,
         'price': price,
         'discount': discount,
-        'photo': photo_binary_data,  # Store binary image data
+        'photo': photo,
         'cat_id': 1,
         'brand_id': 1,
         'child_cat_id': 1,
@@ -72,12 +66,11 @@ for message in messages:
         'updated_at': datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
     })
 
-
 # Creating a new DataFrame with the extracted data
 result_df = pd.DataFrame(result_list)
 
 # Displaying the DataFrame using tabulate
-print(tabulate(result_df[['id', 'title', 'slug', 'price', 'discount', 'cat_id', 'brand_id', 'photo', 'created_at', 'updated_at']], headers='keys', tablefmt='pretty', showindex=False))
+print(tabulate(result_df, headers='keys', tablefmt='pretty', showindex=False))
 
 # SQLAlchemy engine to connect to PostgreSQL
 engine = create_engine('postgresql://postgres:1111@localhost:5432/test')
